@@ -31,7 +31,6 @@ def VGG13(input_shape, num_classes):
         Flatten(),
         Dense(4096, activation='relu'),
         Dense(4096, activation='relu'),
-        Dense(1000, activation='relu'),
         Dense(num_classes, activation='softmax')
     ], name='VGG13')
     return vgg13

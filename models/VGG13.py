@@ -7,8 +7,6 @@ class VGG13(Module):
 
       Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
       ReLU(),
-      
-      
       Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
       ReLU(),
 
@@ -48,7 +46,7 @@ class VGG13(Module):
     self.flatten = Flatten()
     
     self.full_layer = Sequential(
-      Linear(9216, 4096),
+      Linear(7*7*512, 4096),
       ReLU(),
       Linear(4096, 4096),
       ReLU(),

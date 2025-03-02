@@ -5,7 +5,6 @@ class FrankNet(Module):
     super(FrankNet, self).__init__()
     self.conv_layer = Sequential(
 
-      # VGG13
       Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
       ReLU(),
       Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
@@ -25,11 +24,13 @@ class FrankNet(Module):
       Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
       ReLU(),
 
-      # AlexNet
-      MaxPool2d(kernel_size=3, stride=2),
+      MaxPool2d(kernel_size=2, stride=2),
+
+
       Conv2d(256, 384, kernel_size=3, padding=1),
       ReLU(),
 
+      MaxPool2d(kernel_size=3, stride=2),
       Conv2d(384, 384, kernel_size=3, padding=1),
       ReLU(),
       Conv2d(384, 256, kernel_size=3, padding=1),
@@ -41,11 +42,11 @@ class FrankNet(Module):
     self.flatten = Flatten()
     
     self.full_layer = Sequential(
-      Linear(9216, 4096),
+      Linear(6*6*256, 4096),
       ReLU(),
-      Linear(4096, 4096),
+      Linear(4096, 2048),
       ReLU(),
-      Linear(4096, 10)
+      Linear(2048, 10)
     )
     
   def forward(self, x):

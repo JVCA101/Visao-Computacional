@@ -9,30 +9,35 @@ class VGG13(Module):
       ReLU(),
       Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
       ReLU(),
+      BatchNorm2d(64),
       MaxPool2d(kernel_size=2, stride=2),
       
       Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
       ReLU(),
       Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
       ReLU(),
+      BatchNorm2d(128),
       MaxPool2d(kernel_size=2, stride=2),
       
       Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
       ReLU(),
       Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
       ReLU(),
+      BatchNorm2d(256),
       MaxPool2d(kernel_size=2, stride=2),
       
       Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
       ReLU(),
       Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
       ReLU(),
+      BatchNorm2d(512),
       MaxPool2d(kernel_size=2, stride=2),
       
       Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
       ReLU(),
       Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
       ReLU(),
+      BatchNorm2d(512),
       MaxPool2d(kernel_size=2, stride=2)
       )
     
@@ -41,8 +46,10 @@ class VGG13(Module):
     self.full_layer = Sequential(
       Linear(7*7*512, 4096),
       ReLU(),
+      Dropout(),
       Linear(4096, 4096),
       ReLU(),
+      Dropout(),
       Linear(4096, 10)
     )
     

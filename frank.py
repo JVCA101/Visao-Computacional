@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchvision.transforms import ToTensor, Compose, Resize, Normalize
 
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -13,6 +14,7 @@ from models.FrankNet import FrankNet
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+#### Load CIFAR10 dataset
 transform = Compose([
     Resize((227,227)),
     ToTensor(),
@@ -27,89 +29,92 @@ batch_size = 8
 train_loader = DataLoader(training_data, batch_size=batch_size)
 test_loader = DataLoader(test_data, batch_size=batch_size)
 
+
+#### Training and Testing functions
 def train(dataloader, model, loss_fn, optimizer):
-    # Obtém o tamanho do dataset
+
+    # size of the dataset
     size = len(dataloader.dataset)
-    # Indica que o modelo está em processo de treinamento
+
+    # model in the training process
     model.train()
 
-    # Define a loss total do treinamento
     totalLoss = 0
 
-    # Itera sobre os lotes
     for batch, (X, y) in enumerate(dataloader):
-        # transforma as entradas no formato do dispositivo utilizado (CPU ou GPU)
+        # transforms the inputs to the device format (CPU or GPU)
         X, y = X.to(device), y.to(device)
 
-        # Faz a predição para os valores atuais dos parâmetros
+        # prediction
         pred = model(X)
 
-        # Estima o valor da função de perda
+        # function loss estimation
         loss = loss_fn(pred, y)
-
-        # Incrementa a loss total
         totalLoss += loss
 
-        # Backpropagation
+        #### Backpropagation
 
-        # Limpa os gradientes
+        # gradient clearing
         optimizer.zero_grad()
 
-        # Estima os gradientes
+        # gradient estimation
         loss.backward()
 
-        # Atualiza os pesos da rede
+        # optimization of the parameters
         optimizer.step()
-
-        if batch % 128 == 0:
-            loss, current = loss.item(), batch * len(X)
-            print(f"loss: {loss:>7f} [{current:>5d}/{size:>5d}]")
 
     print(f"Epoch average loss: {totalLoss/len(dataloader):>7f}")
 
 def test(dataloader, model, loss_fn, batch_size, epoch, lr, optimizer):
-    # Obtém o tamanho do dataset
-    size = len(dataloader.dataset)
 
-    # Obtém o número de lotes (iterações)
+    # size of the dataset and number of batches
+    size = len(dataloader.dataset)
     num_batches = len(dataloader)
 
-    # Indica que o modelo está em processo de teste
+    # model in the testing process
     model.eval()
 
-    # Inicializa a perda de teste e a quantidade de acertos com 0
     test_loss, correct = 0, 0
 
-    # Inicializa as listas de predições e rótulos
+    # initialize lists of predictions and labels for confusion matrix
     all_preds, all_labels = [], []
 
-    # Desabilita o cálculo do gradiente
+    # disable gradient calculation
     with torch.no_grad():
-        # Itera sobre o conjunto de teste
+
         for X, y in dataloader:
-            # transforma as entradas no formato do dispositivo utilizado (CPU ou GPU)
+            # transform the inputs to the device format (CPU or GPU)
             X, y = X.to(device), y.to(device)
-            # Realiza a predição
+
+            # prediction
             pred = model(X)
 
+            # get the class with the highest probability as the prediction and append to the list
             _, preds = torch.max(pred, 1)
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(y.cpu().numpy())
             
-
-            # Calcula a perda
+            # calculate loss
             test_loss += loss_fn(pred, y).item()
-            # Verifica se a predição foi correta
+            
+            # calculate accuracy
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     
-    # Determina a perda média e a proporção de acertos
+    # average loss and accuracy
     test_loss /= num_batches
     correct /= size
     
-    # mostra a acurácia e a perda
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
+    # save results to file
+    try:
+        with open('frank_results/frank_' + str(batch_size) + '_' + str(epoch) + '_' + str(lr) + '_' + str(optimizer) + '.txt', 'w') as f:
+            f.write(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    except:
+        print("Error writing to file")
 
+
+    #### Confusion Matrix
     # Convert to numpy arrays
     all_preds = np.array(all_preds)
     all_labels = np.array(all_labels)
@@ -124,20 +129,32 @@ def test(dataloader, model, loss_fn, batch_size, epoch, lr, optimizer):
     plt.xlabel('Predicted')
     plt.ylabel('True')
 
-    plt.savefig('frank_cm_' + batch_size + '_' + epoch + '_' + lr + '_' + optimizer + '.png')
+    plt.savefig('confusion_matrix/frank_cm_' + str(batch_size) + '_' + str(epoch) + '_' + str(lr) + '_' + str(optimizer) + '.png')
 
+
+#### Model
 franknet = FrankNet().to(device)
 print(franknet)
 
-learning_rate = 0.001
-epochs = 5
-
+#### Hyperparameters(batch_size is already defined at the beginning of the file)
+learning_rate = 0.01
+epochs = 30
 loss_fn = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(franknet.parameters(), lr=learning_rate)
+optimizer = torch.optim.SGD(franknet.parameters(), lr=learning_rate)
 
+
+#### Training
+start, end = 0, 0
 for t in range(epochs):
     print(f"-------------------------------\nEpoch {t+1}")
+    start = time.time()
     train(train_loader, franknet, loss_fn, optimizer)
-test(test_loader, franknet, loss_fn, batch_size, epochs, learning_rate, "adam")
-print("Done!")
+    end = time.time()
+    print(f"Epoch time: {end-start}")
 
+#### Testing
+start = time.time()
+test(test_loader, franknet, loss_fn, batch_size, epochs, learning_rate, "sgd")
+end = time.time()
+print(f"Testing time: {end-start}")
+print("\nDone!")
